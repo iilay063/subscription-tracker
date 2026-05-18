@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import type { SubscriptionFormState } from "@/app/actions/subscriptions";
 import { CURRENCIES } from "@/lib/currencies";
+import { PRESET_CATEGORIES, isLegacyCategory } from "@/lib/categories-presets";
 
 const initial: SubscriptionFormState = { ok: false };
 
@@ -42,6 +43,11 @@ export function SubscriptionForm({
   const [state, formAction, pending] = useActionState(action, initial);
   const [cycle, setCycle] = useState<string>(defaults?.billingCycle ?? "monthly");
   const [currency, setCurrency] = useState<string>(defaults?.currency ?? "USD");
+
+  const initialCategory = defaults?.categoryName ?? "";
+  const legacyCategory = isLegacyCategory(initialCategory) ? initialCategory : null;
+  const [category, setCategory] = useState<string>(initialCategory);
+
   const fe = state.fieldErrors ?? {};
 
   return (
@@ -127,12 +133,33 @@ export function SubscriptionForm({
 
       <div className="space-y-2">
         <Label htmlFor="categoryName">Category</Label>
-        <Input
-          id="categoryName"
-          name="categoryName"
-          defaultValue={defaults?.categoryName}
-          placeholder="Streaming, Software, …"
-        />
+        <input type="hidden" name="categoryName" value={category} />
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger id="categoryName">
+            <SelectValue placeholder="Choose a category…" />
+          </SelectTrigger>
+          <SelectContent>
+            {legacyCategory && (
+              <SelectItem value={legacyCategory}>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+                  {legacyCategory} (current)
+                </span>
+              </SelectItem>
+            )}
+            {PRESET_CATEGORIES.map((p) => (
+              <SelectItem key={p.name} value={p.name}>
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: p.color }}
+                  />
+                  {p.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

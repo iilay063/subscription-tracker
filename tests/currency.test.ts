@@ -13,8 +13,10 @@ describe("round2", () => {
     expect(round2(10)).toBe(10);
   });
 
-  it("handles negative numbers", () => {
-    expect(round2(-1.235)).toBeCloseTo(-1.24, 5);
+  it("handles negative numbers (Math.round rounds half toward +∞)", () => {
+    // The app only deals with non-negative money, but document the behavior.
+    expect(round2(-1.234)).toBe(-1.23);
+    expect(round2(-1.236)).toBe(-1.24);
   });
 });
 

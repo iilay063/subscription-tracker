@@ -3,6 +3,7 @@ import { getUserById } from "@/lib/db/users";
 import { convert } from "@/lib/external/currency";
 import { round2 } from "@/lib/money";
 import { monthlyEquivalent, yearlyEquivalent } from "@/lib/billing/dates";
+import { resolveCategoryColor } from "@/lib/categories-presets";
 import { addDays, startOfDay } from "date-fns";
 
 export type DashboardData = {
@@ -69,7 +70,7 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
     yearlyTotal += yearly;
 
     const catKey = category?.name ?? "Uncategorized";
-    const catColor = category?.color ?? "#94a3b8";
+    const catColor = resolveCategoryColor(category?.name);
     const prev = byCategory.get(catKey);
     byCategory.set(catKey, {
       color: catColor,
@@ -85,7 +86,7 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
       nextBillingDate: sub.nextBillingDate,
       billingCycle: sub.billingCycle,
       categoryName: category?.name ?? null,
-      categoryColor: category?.color ?? null,
+      categoryColor: catColor,
     });
   }
 
@@ -97,7 +98,7 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
       currency: sub.currency,
       nextBillingDate: sub.nextBillingDate,
       categoryName: category?.name ?? null,
-      categoryColor: category?.color ?? null,
+      categoryColor: resolveCategoryColor(category?.name),
     }),
   );
 
