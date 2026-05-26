@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
   title: "Subscription Tracker",
@@ -20,12 +21,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground antialiased flex flex-col" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{ __html: setThemeScript }}
           suppressHydrationWarning
         />
-        {children}
+        <div className="flex-1">{children}</div>
+        <Footer />
       </body>
     </html>
   );
