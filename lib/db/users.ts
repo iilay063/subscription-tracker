@@ -9,7 +9,11 @@ export async function getUserById(id: string) {
 
 export async function updateUserSettings(
   id: string,
-  patch: { preferredCurrency?: string; reminderLeadDays?: number },
+  patch: {
+    preferredCurrency?: string;
+    reminderLeadDays?: number;
+    monthlyBudget?: string | null;
+  },
 ) {
   const [row] = await db
     .update(users)
@@ -17,4 +21,11 @@ export async function updateUserSettings(
     .where(eq(users.id, id))
     .returning();
   return row;
+}
+
+export async function setBudgetAlertSentForMonth(id: string, ym: string | null) {
+  await db
+    .update(users)
+    .set({ budgetAlertSentForMonth: ym })
+    .where(eq(users.id, id));
 }

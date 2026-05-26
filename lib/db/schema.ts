@@ -22,6 +22,12 @@ export const billingCycleEnum = pgEnum("billing_cycle", [
 
 export const reminderChannelEnum = pgEnum("reminder_channel", ["email"]);
 
+export const reminderKindEnum = pgEnum("reminder_kind", [
+  "renewal",
+  "trial_ending",
+  "budget_alert",
+]);
+
 // ---------- Auth.js tables ----------
 
 export const users = pgTable("user", {
@@ -35,6 +41,8 @@ export const users = pgTable("user", {
 
   preferredCurrency: text("preferred_currency").notNull().default("USD"),
   reminderLeadDays: integer("reminder_lead_days").notNull().default(3),
+  monthlyBudget: decimal("monthly_budget", { precision: 12, scale: 2 }),
+  budgetAlertSentForMonth: text("budget_alert_sent_for_month"), // YYYY-MM
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 
@@ -129,6 +137,16 @@ export const subscriptions = pgTable(
     }),
     isActive: boolean("is_active").notNull().default(true),
 
+    // Free trial tracking
+    isTrial: boolean("is_trial").notNull().default(false),
+    trialEndsAt: timestamp("trial_ends_at", {
+      mode: "date",
+      withTimezone: true,
+    }),
+
+    // Per-subscription reminder lead override (null → use user default)
+    reminderLeadDaysOverride: integer("reminder_lead_days_override"),
+
     url: text("url"),
     notes: text("notes"),
 
@@ -183,9 +201,11 @@ export const reminderLog = pgTable(
       .notNull()
       .defaultNow(),
     channel: reminderChannelEnum("channel").notNull().default("email"),
+    kind: reminderKindEnum("kind").notNull().default("renewal"),
     success: boolean("success").notNull(),
     errorMessage: text("error_message"),
-    // Used to dedupe: the billing date the reminder was about
+    // Used to dedupe: the date the reminder was about (renewal billing date,
+    // or trial end date depending on kind).
     forBillingDate: timestamp("for_billing_date", {
       mode: "date",
       withTimezone: true,
