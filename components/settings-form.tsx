@@ -19,9 +19,11 @@ const initial: SettingsFormState = { ok: false };
 export function SettingsForm({
   defaultCurrency,
   defaultLeadDays,
+  defaultMonthlyBudget,
 }: {
   defaultCurrency: string;
   defaultLeadDays: number;
+  defaultMonthlyBudget: number | null;
 }) {
   const [state, action, pending] = useActionState(updateSettingsAction, initial);
   const [currency, setCurrency] = useState(defaultCurrency);
@@ -57,6 +59,25 @@ export function SettingsForm({
         {fe.reminderLeadDays && <p className="text-xs text-destructive">{fe.reminderLeadDays}</p>}
         <p className="text-xs text-muted-foreground">
           We&apos;ll email you this many days before each renewal.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="monthlyBudget">Monthly budget ({defaultCurrency})</Label>
+        <Input
+          id="monthlyBudget"
+          name="monthlyBudget"
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min={0}
+          defaultValue={defaultMonthlyBudget ?? ""}
+          placeholder="Leave blank to disable"
+        />
+        {fe.monthlyBudget && <p className="text-xs text-destructive">{fe.monthlyBudget}</p>}
+        <p className="text-xs text-muted-foreground">
+          When your projected monthly total exceeds this, we&apos;ll show a warning
+          on the dashboard and send one email per month.
         </p>
       </div>
 

@@ -50,11 +50,29 @@ const SubscriptionInput = z
       .or(z.literal(""))
       .transform((s) => (s ? s : null)),
     notes: z.string().trim().max(1000).optional().or(z.literal("")),
+    isTrial: z
+      .union([z.literal("on"), z.literal("true"), z.literal(""), z.literal(null), z.undefined()])
+      .transform((v) => v === "on" || v === "true"),
+    trialEndsAt: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((v) => (v ? new Date(v) : null))
+      .refine((d) => d === null || !isNaN(d.getTime()), "Invalid trial-end date"),
+    reminderLeadDaysOverride: z
+      .union([z.string(), z.number(), z.null(), z.undefined()])
+      .transform((v) => (v === null || v === undefined || v === "" ? null : Number(v)))
+      .refine(
+        (v) => v === null || (Number.isInteger(v) && v >= 0 && v <= 30),
+        "0–30 only",
+      ),
   })
   .refine(
     (d) => d.billingCycle !== "custom_days" || (d.customDays !== null),
     { message: "customDays is required for custom cycle", path: ["customDays"] },
-  );
+  )
+  .refine((d) => !d.isTrial || d.trialEndsAt !== null, {
+    message: "Pick the date the trial ends",
+    path: ["trialEndsAt"],
+  });
 
 export type SubscriptionFormState = {
   ok: boolean;
@@ -74,6 +92,9 @@ function parseForm(formData: FormData) {
     categoryName: formData.get("categoryName") ?? "",
     url: formData.get("url") ?? "",
     notes: formData.get("notes") ?? "",
+    isTrial: formData.get("isTrial"),
+    trialEndsAt: formData.get("trialEndsAt"),
+    reminderLeadDaysOverride: formData.get("reminderLeadDaysOverride"),
   };
   return SubscriptionInput.safeParse(data);
 }
@@ -110,6 +131,9 @@ export async function addSubscriptionAction(
     nextBillingDate: v.nextBillingDate,
     url: v.url,
     notes: v.notes || null,
+    isTrial: v.isTrial,
+    trialEndsAt: v.trialEndsAt,
+    reminderLeadDaysOverride: v.reminderLeadDaysOverride,
   });
   revalidatePath("/dashboard");
   redirect("/dashboard");
@@ -148,6 +172,9 @@ export async function updateSubscriptionAction(
     nextBillingDate: v.nextBillingDate,
     url: v.url,
     notes: v.notes || null,
+    isTrial: v.isTrial,
+    trialEndsAt: v.trialEndsAt,
+    reminderLeadDaysOverride: v.reminderLeadDaysOverride,
   });
   revalidatePath("/dashboard");
   revalidatePath(`/subscriptions/${id}`);

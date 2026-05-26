@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { CategoryChart } from "@/components/dashboard/category-chart";
 import { UpcomingList } from "@/components/dashboard/upcoming-list";
-import { SubscriptionsTable } from "@/components/dashboard/subscriptions-table";
+import { SubscriptionsSection } from "@/components/dashboard/subscriptions-section";
+import { BudgetBanner } from "@/components/dashboard/budget-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -25,13 +26,24 @@ export default async function DashboardPage() {
             {data.ratesNote ? ` Rates updated ${data.ratesNote.hoursAgo}h ago.` : ""}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/subscriptions/new">
-            <Plus className="h-4 w-4" />
-            Add subscription
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/api/export/subscriptions.csv">Export CSV</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/subscriptions/new">
+              <Plus className="h-4 w-4" />
+              Add subscription
+            </Link>
+          </Button>
+        </div>
       </div>
+
+      <BudgetBanner
+        monthlyTotal={data.monthlyTotal}
+        budget={data.monthlyBudget}
+        currency={data.userCurrency}
+      />
 
       <SummaryCards
         monthlyTotal={data.monthlyTotal}
@@ -64,9 +76,10 @@ export default async function DashboardPage() {
           <CardTitle>Active subscriptions</CardTitle>
         </CardHeader>
         <CardContent>
-          <SubscriptionsTable
+          <SubscriptionsSection
             items={data.subscriptions}
             userCurrency={data.userCurrency}
+            categories={data.categories}
           />
         </CardContent>
       </Card>

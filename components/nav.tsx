@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Nav({ userName }: { userName?: string | null }) {
   return (
@@ -30,8 +31,9 @@ export function Nav({ userName }: { userName?: string | null }) {
             Settings
           </Link>
         </nav>
-        <div className="flex items-center gap-3 text-sm">
-          {userName ? <span className="hidden sm:inline text-muted-foreground">{userName}</span> : null}
+        <div className="flex items-center gap-1 text-sm">
+          {userName ? <span className="hidden sm:inline text-muted-foreground mr-2">{userName}</span> : null}
+          <ThemeToggle />
           <form
             action={async () => {
               "use server";

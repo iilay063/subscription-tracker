@@ -87,6 +87,11 @@ export default async function SubscriptionDetailPage({
               categoryName: categoryName ?? "",
               url: sub.url,
               notes: sub.notes,
+              isTrial: sub.isTrial,
+              trialEndsAt: sub.trialEndsAt
+                ? format(sub.trialEndsAt, "yyyy-MM-dd")
+                : "",
+              reminderLeadDaysOverride: sub.reminderLeadDaysOverride,
             }}
             submitLabel="Save changes"
           />

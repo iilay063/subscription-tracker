@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { Sparkles } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import type { DashboardData } from "@/lib/dashboard";
 import { daysUntil } from "@/lib/billing/dates";
@@ -16,13 +17,29 @@ export function UpcomingList({ items }: { items: DashboardData["upcoming"] }) {
         return (
           <li key={it.id} className="flex items-center justify-between gap-3 py-3 text-sm">
             <div className="flex min-w-0 items-center gap-3">
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ background: it.categoryColor ?? "#94a3b8" }}
-              />
+              {it.faviconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={it.faviconUrl}
+                  alt=""
+                  className="h-5 w-5 shrink-0 rounded-sm"
+                  loading="lazy"
+                />
+              ) : (
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: it.categoryColor ?? "#94a3b8" }}
+                />
+              )}
               <Link href={`/subscriptions/${it.id}`} className="truncate font-medium hover:underline">
                 {it.name}
               </Link>
+              {it.isTrial && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-300">
+                  <Sparkles className="h-3 w-3" />
+                  Trial
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4 text-right">
               <span className="text-muted-foreground">

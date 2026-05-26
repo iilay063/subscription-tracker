@@ -29,6 +29,9 @@ type Defaults = {
   categoryName?: string;
   url?: string | null;
   notes?: string | null;
+  isTrial?: boolean;
+  trialEndsAt?: string;
+  reminderLeadDaysOverride?: number | null;
 };
 
 export function SubscriptionForm({
@@ -47,6 +50,8 @@ export function SubscriptionForm({
   const initialCategory = defaults?.categoryName ?? "";
   const legacyCategory = isLegacyCategory(initialCategory) ? initialCategory : null;
   const [category, setCategory] = useState<string>(initialCategory);
+
+  const [isTrial, setIsTrial] = useState<boolean>(defaults?.isTrial ?? false);
 
   const fe = state.fieldErrors ?? {};
 
@@ -175,6 +180,57 @@ export function SubscriptionForm({
       <div className="space-y-2">
         <Label htmlFor="notes">Notes (optional)</Label>
         <Textarea id="notes" name="notes" defaultValue={defaults?.notes ?? ""} rows={3} />
+      </div>
+
+      <div className="rounded-md border p-4 space-y-3">
+        <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+          <input
+            type="checkbox"
+            name="isTrial"
+            checked={isTrial}
+            onChange={(e) => setIsTrial(e.target.checked)}
+            className="h-4 w-4 rounded border-input"
+          />
+          This is a free trial
+        </label>
+        {isTrial && (
+          <div className="space-y-2">
+            <Label htmlFor="trialEndsAt">Trial ends on</Label>
+            <Input
+              id="trialEndsAt"
+              name="trialEndsAt"
+              type="date"
+              defaultValue={defaults?.trialEndsAt ?? ""}
+            />
+            {fe.trialEndsAt && (
+              <p className="text-xs text-destructive">{fe.trialEndsAt}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              You&apos;ll get a stronger reminder a few days before this date.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="reminderLeadDaysOverride">
+          Reminder lead time (days, optional)
+        </Label>
+        <Input
+          id="reminderLeadDaysOverride"
+          name="reminderLeadDaysOverride"
+          type="number"
+          min={0}
+          max={30}
+          defaultValue={defaults?.reminderLeadDaysOverride ?? ""}
+          placeholder="Use account default"
+        />
+        {fe.reminderLeadDaysOverride && (
+          <p className="text-xs text-destructive">{fe.reminderLeadDaysOverride}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Override the global setting just for this subscription.
+        </p>
       </div>
 
       {state.error && (

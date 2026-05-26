@@ -16,6 +16,13 @@ const SettingsInput = z.object({
     .or(z.number())
     .transform((v) => Number(v))
     .refine((n) => Number.isInteger(n) && n >= 0 && n <= 30, "0–30 only"),
+  monthlyBudget: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform((v) => (v === null || v === undefined || v === "" ? null : Number(v)))
+    .refine(
+      (v) => v === null || (Number.isFinite(v) && v >= 0 && v <= 1_000_000),
+      "Budget must be ≥ 0",
+    ),
 });
 
 export type SettingsFormState = {
@@ -32,6 +39,7 @@ export async function updateSettingsAction(
   const parsed = SettingsInput.safeParse({
     preferredCurrency: formData.get("preferredCurrency"),
     reminderLeadDays: formData.get("reminderLeadDays"),
+    monthlyBudget: formData.get("monthlyBudget"),
   });
   if (!parsed.success) {
     const fe: Record<string, string> = {};
@@ -40,7 +48,14 @@ export async function updateSettingsAction(
     }
     return { ok: false, error: "Please check the form.", fieldErrors: fe };
   }
-  await updateUserSettings(user.id, parsed.data);
+  await updateUserSettings(user.id, {
+    preferredCurrency: parsed.data.preferredCurrency,
+    reminderLeadDays: parsed.data.reminderLeadDays,
+    monthlyBudget:
+      parsed.data.monthlyBudget === null
+        ? null
+        : parsed.data.monthlyBudget.toFixed(2),
+  });
   revalidatePath("/dashboard");
   revalidatePath("/settings");
   return { ok: true };

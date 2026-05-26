@@ -17,6 +17,9 @@ export default async function SettingsPage() {
           <SettingsForm
             defaultCurrency={dbUser?.preferredCurrency ?? "USD"}
             defaultLeadDays={dbUser?.reminderLeadDays ?? 3}
+            defaultMonthlyBudget={
+              dbUser?.monthlyBudget ? Number(dbUser.monthlyBudget) : null
+            }
           />
         </CardContent>
       </Card>
