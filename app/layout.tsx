@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/footer";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Subscription Tracker",
@@ -20,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased flex flex-col" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground antialiased flex flex-col font-sans" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{ __html: setThemeScript }}
           suppressHydrationWarning

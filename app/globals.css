@@ -2,53 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Halo palette. The existing shadcn HSL variables (`--background`, `--card`,
+ * `--primary`, etc.) are re-pointed to Halo colors so the existing primitives
+ * (Button, Card, Input, Select) render in the warm palette without
+ * per-component rework. Halo-only tokens are kept as separate vars and
+ * exposed in tailwind.config.ts as their own utilities.
+ */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Halo light tokens */
+    --bg:              48 21% 97%;   /* #FAFAF7 */
+    --surface:         0 0% 100%;    /* #FFFFFF */
+    --surface-muted:   43 25% 95%;   /* #F5F3EE */
+    --border-color:    45 18% 91%;   /* #ECEAE3 */
+    --border-strong:   43 19% 85%;   /* #DFDBD2 */
+    --ink:             45 8% 5%;     /* #0E0E0C */
+    --ink-2:           36 5% 22%;    /* #3B3935 */
+    --muted-text:      36 4% 49%;    /* #84807A */
+    --faint:           38 8% 67%;    /* #B0ACA4 */
+    --accent-emerald:  154 54% 36%;  /* #2B8F66 */
+    --violet:          252 100% 72%; /* #8C6FFF */
+    --coral:           18 65% 65%;   /* #E18B6B */
+    --donut-track:     45 18% 91%;
+    --shadow-halo:     0 1px 0 rgba(20,20,20,0.02), 0 8px 24px -16px rgba(20,20,20,0.08);
+
+    /* shadcn aliases — point legacy tokens at the Halo palette */
+    --background:           var(--bg);
+    --foreground:           var(--ink);
+    --card:                 var(--surface);
+    --card-foreground:      var(--ink);
+    --popover:              var(--surface);
+    --popover-foreground:   var(--ink);
+    --primary:              var(--accent-emerald);
+    --primary-foreground:   0 0% 100%;
+    --secondary:            var(--surface-muted);
+    --secondary-foreground: var(--ink);
+    --muted:                var(--surface-muted);
+    --muted-foreground:     var(--muted-text);
+    --accent:               var(--surface-muted);
+    --accent-foreground:    var(--ink);
+    --destructive:          var(--coral);
+    --destructive-foreground: 0 0% 100%;
+    --border:               var(--border-color);
+    --input:                var(--border-color);
+    --ring:                 var(--accent-emerald);
+    --radius:               0.5rem;
   }
+
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --bg:              40 13% 5%;    /* #0E0D0B */
+    --surface:         40 17% 7%;    /* #16140F */
+    --surface-muted:   40 16% 9%;    /* #1C1A14 */
+    --border-color:    43 16% 13%;   /* #26241C */
+    --border-strong:   45 12% 19%;   /* #34322A */
+    --ink:             43 35% 93%;   /* #F5F1E8 */
+    --ink-2:           40 19% 74%;   /* #C9C2B3 */
+    --muted-text:      40 9% 50%;    /* #8A8475 */
+    --faint:           37 11% 33%;   /* #5C574B */
+    --accent-emerald:  154 54% 36%;
+    --violet:          252 100% 72%;
+    --coral:           18 65% 65%;
+    --donut-track:     43 16% 13%;
+    --shadow-halo:     0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px -16px rgba(0,0,0,0.6);
   }
 }
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11";
+  }
+  .tnum { font-variant-numeric: tabular-nums; }
 }

@@ -12,11 +12,13 @@ export type DashboardSubscription = {
   name: string;
   cost: number;
   currency: string;
+  costInUserCurrency: number;
   monthlyInUserCurrency: number;
   nextBillingDate: Date;
   billingCycle: string;
   categoryName: string | null;
   categoryColor: string | null;
+  url: string | null;
   faviconUrl: string | null;
   isTrial: boolean;
   trialEndsAt: Date | null;
@@ -28,6 +30,7 @@ export type DashboardUpcoming = {
   name: string;
   cost: number;
   currency: string;
+  costInUserCurrency: number;
   nextBillingDate: Date;
   categoryName: string | null;
   categoryColor: string | null;
@@ -80,6 +83,7 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
   const byCategory = new Map<string, { color: string; monthly: number }>();
   const subscriptions: DashboardSubscription[] = [];
   const categorySet = new Set<string>();
+  const convertedById = new Map<string, number>();
 
   let oldestRateAt: Date | null = null;
 
@@ -113,16 +117,19 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
         ? { previous: pair.previous, change: pair.latest - pair.previous }
         : null;
 
+    convertedById.set(sub.id, round2(converted));
     subscriptions.push({
       id: sub.id,
       name: sub.name,
       cost,
       currency: sub.currency,
+      costInUserCurrency: round2(converted),
       monthlyInUserCurrency: round2(monthly),
       nextBillingDate: sub.nextBillingDate,
       billingCycle: sub.billingCycle,
       categoryName: category?.name ?? null,
       categoryColor: catColor,
+      url: sub.url,
       faviconUrl: faviconFor(sub.url),
       isTrial: sub.isTrial,
       trialEndsAt: sub.trialEndsAt,
@@ -130,18 +137,23 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
     });
   }
 
-  const upcoming: DashboardUpcoming[] = upcomingRows.map(({ sub, category }) => ({
-    id: sub.id,
-    name: sub.name,
-    cost: Number(sub.cost),
-    currency: sub.currency,
-    nextBillingDate: sub.nextBillingDate,
-    categoryName: category?.name ?? null,
-    categoryColor: resolveCategoryColor(category?.name),
-    faviconUrl: faviconFor(sub.url),
-    isTrial: sub.isTrial,
-    trialEndsAt: sub.trialEndsAt,
-  }));
+  const upcoming: DashboardUpcoming[] = upcomingRows.map(({ sub, category }) => {
+    const cost = Number(sub.cost);
+    const converted = convertedById.get(sub.id) ?? cost;
+    return {
+      id: sub.id,
+      name: sub.name,
+      cost,
+      currency: sub.currency,
+      costInUserCurrency: converted,
+      nextBillingDate: sub.nextBillingDate,
+      categoryName: category?.name ?? null,
+      categoryColor: resolveCategoryColor(category?.name),
+      faviconUrl: faviconFor(sub.url),
+      isTrial: sub.isTrial,
+      trialEndsAt: sub.trialEndsAt,
+    };
+  });
 
   const breakdown = Array.from(byCategory.entries())
     .map(([category, { color, monthly }]) => ({
