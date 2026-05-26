@@ -111,6 +111,7 @@ function TimelineRail({
   userCurrency: string;
 }) {
   const today = useMemo(() => startOfDay(new Date()), []);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   const days = useMemo(() => {
     return Array.from({ length: 30 }, (_, i) => {
@@ -131,6 +132,15 @@ function TimelineRail({
     );
   }
 
+  const featured =
+    selectedIdx !== null && days[selectedIdx]
+      ? days[selectedIdx].billings
+      : items.slice(0, 3);
+  const featuredHeading =
+    selectedIdx !== null && days[selectedIdx]
+      ? `Billing on ${format(days[selectedIdx].dt, "MMM d")}`
+      : "Next up";
+
   return (
     <div className="px-7 pb-7">
       <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 scrollbar-thin">
@@ -138,26 +148,36 @@ function TimelineRail({
           const isToday = i === 0;
           const has = day.billings.length > 0;
           const height = has ? 22 + (day.amt / maxAmt) * 56 : 0;
+          const selected = selectedIdx === i;
           return (
             <div
               key={i}
-              className="flex flex-col items-center gap-2 min-w-[34px]"
+              className="group/bar relative flex flex-col items-center gap-2 min-w-[34px]"
             >
               <div className="h-[80px] flex flex-col items-center justify-end">
                 {has ? (
-                  <div
-                    className="w-7 rounded-t-md flex flex-col items-center justify-end gap-[2px] pb-1"
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedIdx(selectedIdx === i ? null : i)
+                    }
+                    aria-label={`Show ${day.billings.length} ${day.billings.length === 1 ? "billing" : "billings"} on ${format(day.dt, "MMM d")}`}
+                    className="w-7 rounded-t-md flex flex-col items-center justify-end gap-[2px] pb-1 transition-all hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                     style={{
                       height,
                       background: isToday
                         ? "hsl(var(--accent-emerald))"
                         : "hsl(var(--surface-muted))",
+                      outline: selected
+                        ? "2px solid hsl(var(--accent-emerald))"
+                        : undefined,
+                      outlineOffset: selected ? "2px" : undefined,
                     }}
                   >
                     {day.billings.slice(0, 3).map((b, j) => (
                       <div
                         key={j}
-                        className="h-1.5 w-1.5 rounded-full"
+                        className="h-1.5 w-1.5 rounded-full pointer-events-none"
                         style={{
                           background: isToday
                             ? "rgba(255,255,255,0.85)"
@@ -165,11 +185,35 @@ function TimelineRail({
                         }}
                       />
                     ))}
-                  </div>
+                  </button>
                 ) : (
                   <div className="h-px w-4 bg-border" />
                 )}
               </div>
+              {has && (
+                <div className="invisible opacity-0 group-hover/bar:visible group-hover/bar:opacity-100 transition-opacity pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1 z-20 min-w-[180px] max-w-[240px] rounded-md border border-border bg-surface shadow-halo p-2.5">
+                  <div className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                    {format(day.dt, "MMM d")} · {formatMoney(day.amt, userCurrency)}
+                  </div>
+                  <ul className="space-y-1">
+                    {day.billings.map((b) => (
+                      <li
+                        key={b.id}
+                        className="flex items-center gap-2 text-[11.5px]"
+                      >
+                        <span
+                          className="h-1.5 w-1.5 rounded-full shrink-0"
+                          style={{ background: b.categoryColor ?? "#84807A" }}
+                        />
+                        <span className="flex-1 truncate text-ink-2">{b.name}</span>
+                        <span className="tnum text-[11px] text-muted-foreground">
+                          {formatMoney(b.cost, b.currency)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div
                 className={`text-[10px] tnum ${isToday ? "font-semibold text-ink" : "text-muted-foreground"}`}
               >
@@ -185,8 +229,22 @@ function TimelineRail({
         })}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-2">
-        {items.slice(0, 3).map((it) => {
+      <div className="mt-6 flex items-center justify-between mb-2">
+        <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+          {featuredHeading}
+        </div>
+        {selectedIdx !== null && (
+          <button
+            type="button"
+            onClick={() => setSelectedIdx(null)}
+            className="text-[11px] text-muted-foreground hover:text-ink"
+          >
+            Clear selection
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {featured.slice(0, 6).map((it) => {
           const days = differenceInCalendarDays(
             startOfDay(it.nextBillingDate),
             today,
@@ -243,6 +301,10 @@ function CalendarGrid({
   const subsByDay = (dt: Date) =>
     items.filter((s) => isSameDay(s.nextBillingDate, dt));
 
+  const [selected, setSelected] = useState<string | null>(null);
+  const selectedDate = selected ? new Date(selected) : null;
+  const selectedSubs = selectedDate ? subsByDay(selectedDate) : [];
+
   return (
     <div className="px-5 pb-6">
       <div className="grid grid-cols-7 gap-px mb-1.5">
@@ -261,10 +323,36 @@ function CalendarGrid({
           const subs = subsByDay(dt);
           const total = subs.reduce((s, x) => s + x.costInUserCurrency, 0);
           const isToday = isSameDay(dt, today);
+          const key = dt.toISOString();
+          const isSelected = selected === key;
+          const interactive = subs.length > 0;
+
           return (
             <div
-              key={dt.toISOString()}
-              className={`min-h-[78px] p-2 flex flex-col ${inMonth ? "bg-surface" : "bg-surface-muted"}`}
+              key={key}
+              onClick={() => {
+                if (!interactive) return;
+                setSelected(isSelected ? null : key);
+              }}
+              role={interactive ? "button" : undefined}
+              tabIndex={interactive ? 0 : undefined}
+              onKeyDown={
+                interactive
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelected(isSelected ? null : key);
+                      }
+                    }
+                  : undefined
+              }
+              className={`group relative min-h-[78px] p-2 flex flex-col transition-colors ${
+                inMonth ? "bg-surface" : "bg-surface-muted"
+              } ${
+                interactive
+                  ? "cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
+                  : ""
+              } ${isSelected ? "ring-2 ring-inset ring-emerald z-10" : ""}`}
             >
               <div className="flex items-center justify-between">
                 <div
@@ -287,15 +375,17 @@ function CalendarGrid({
               </div>
               <div className="mt-auto flex flex-col gap-0.5">
                 {subs.slice(0, 2).map((s) => (
-                  <div
+                  <Link
                     key={s.id}
-                    className="flex items-center gap-1 text-[10px] truncate rounded px-1 py-0.5 bg-surface-muted text-ink-2"
+                    href={`/subscriptions/${s.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 text-[10px] truncate rounded px-1 py-0.5 bg-surface-muted text-ink-2 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
                     style={{
                       borderLeft: `2px solid ${s.categoryColor ?? "#84807A"}`,
                     }}
                   >
                     <span className="truncate">{s.name}</span>
-                  </div>
+                  </Link>
                 ))}
                 {subs.length > 2 && (
                   <div className="text-[10px] tnum text-muted-foreground">
@@ -308,10 +398,87 @@ function CalendarGrid({
                   </div>
                 )}
               </div>
+
+              {interactive && (
+                <div
+                  className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1 z-20 min-w-[180px] max-w-[240px] rounded-md border border-border bg-surface shadow-halo p-2.5"
+                >
+                  <div className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                    {format(dt, "MMM d")} · {formatMoney(total, userCurrency)}
+                  </div>
+                  <ul className="space-y-1">
+                    {subs.map((s) => (
+                      <li
+                        key={s.id}
+                        className="flex items-center gap-2 text-[11.5px]"
+                      >
+                        <span
+                          className="h-1.5 w-1.5 rounded-full shrink-0"
+                          style={{
+                            background: s.categoryColor ?? "#84807A",
+                          }}
+                        />
+                        <span className="flex-1 truncate text-ink-2">
+                          {s.name}
+                        </span>
+                        <span className="tnum text-[11px] text-muted-foreground">
+                          {formatMoney(s.cost, s.currency)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {selectedDate && selectedSubs.length > 0 && (
+        <div className="mt-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+              Billing on {format(selectedDate, "MMM d")}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="text-[11px] text-muted-foreground hover:text-ink"
+            >
+              Close
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {selectedSubs.map((s) => (
+              <Link
+                key={s.id}
+                href={`/subscriptions/${s.id}`}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-surface-muted hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+              >
+                <Logo
+                  sub={{
+                    name: s.name,
+                    faviconUrl: s.faviconUrl,
+                    categoryColor: s.categoryColor,
+                  }}
+                  size={32}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium truncate">
+                    {s.name}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {s.categoryName ?? "Uncategorized"}
+                  </div>
+                </div>
+                <div className="tnum text-[13px] font-medium">
+                  {formatMoney(s.cost, s.currency)}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

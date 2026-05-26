@@ -12,3 +12,4 @@ dist
 .tsbuildinfo
 next-env.d.ts
 drizzle/meta
+design_handoff_subtracker_redesign/

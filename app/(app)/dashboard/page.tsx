@@ -89,6 +89,7 @@ export default async function DashboardPage() {
           breakdown={data.breakdown}
           monthlyTotal={data.monthlyTotal}
           currency={data.userCurrency}
+          subscriptions={data.subscriptions}
         />
       </div>
 
