@@ -29,3 +29,10 @@ export async function setBudgetAlertSentForMonth(id: string, ym: string | null) 
     .set({ budgetAlertSentForMonth: ym })
     .where(eq(users.id, id));
 }
+
+export async function updateGmailLastScannedAt(id: string, when: Date) {
+  await db
+    .update(users)
+    .set({ gmailLastScannedAt: when })
+    .where(eq(users.id, id));
+}

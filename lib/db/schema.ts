@@ -43,6 +43,12 @@ export const users = pgTable("user", {
   reminderLeadDays: integer("reminder_lead_days").notNull().default(3),
   monthlyBudget: decimal("monthly_budget", { precision: 12, scale: 2 }),
   budgetAlertSentForMonth: text("budget_alert_sent_for_month"), // YYYY-MM
+
+  // Subscription detection — when the user last ran a Gmail inbox scan.
+  gmailLastScannedAt: timestamp("gmail_last_scanned_at", {
+    mode: "date",
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
 });
 

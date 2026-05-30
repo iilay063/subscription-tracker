@@ -21,6 +21,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      // Request read-only Gmail access so users can scan their inbox for
+      // subscription receipts. `access_type: offline` + `prompt: consent`
+      // are required for Google to issue a refresh_token we can use for
+      // server-side Gmail API calls after the session's access token expires.
+      authorization: {
+        params: {
+          scope:
+            "openid email profile https://www.googleapis.com/auth/gmail.readonly",
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
     }),
   ],
   pages: { signIn: "/sign-in" },

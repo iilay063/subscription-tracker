@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CreditCard, Archive, Settings, LogOut, Moon, Sun } from "lucide-react";
+import { Home, CreditCard, Sparkles, Archive, Settings, LogOut, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,7 @@ type NavLink = {
 const NAV: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", Icon: Home, exact: true },
   { href: "/subscriptions", label: "Subscriptions", Icon: CreditCard },
+  { href: "/detect", label: "Detect", Icon: Sparkles, exact: true },
   { href: "/subscriptions/cancelled", label: "Cancelled", Icon: Archive },
   { href: "/settings", label: "Settings", Icon: Settings },
 ];

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { requireUser } from "@/lib/auth-helpers";
 import { loadDashboard } from "@/lib/dashboard";
@@ -59,6 +59,12 @@ export default async function DashboardPage() {
             className="h-9 px-3 rounded-md border border-border-strong text-[13px] inline-flex items-center gap-1.5 text-ink-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
           >
             <Download className="h-3.5 w-3.5" strokeWidth={1.75} /> Export
+          </Link>
+          <Link
+            href="/detect"
+            className="h-9 px-3 rounded-md border border-border-strong text-[13px] inline-flex items-center gap-1.5 text-ink-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+          >
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Detect
           </Link>
           <Link
             href="/subscriptions/new"
