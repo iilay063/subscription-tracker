@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/auth-helpers";
 import {
   getValidGmailToken,
   listBillingEmails,
-  fetchEmailBody,
+  fetchEmailContext,
+  formatEmailForLLM,
 } from "@/lib/external/gmail";
 import {
   extractFromText,
@@ -52,19 +53,28 @@ export async function scanGmailAction(): Promise<ScanResult> {
   }
 
   try {
-    const messages = await listBillingEmails(token.accessToken, 50);
+    const messages = await listBillingEmails(token.accessToken, 200);
 
-    // Dedupe by sender so we don't spend tokens parsing five Netflix emails.
-    const bySender = new Map<string, string>();
+    // Cap per-sender to limit Claude spend while keeping enough messages to
+    // catch the actual receipt rather than the welcome / marketing email
+    // that may come in first. Gmail returns newest-first; keeping the two
+    // most recent per sender preserves the latest charge per service.
+    const MAX_PER_SENDER = 2;
+    const perSenderCount = new Map<string, number>();
+    const selected: string[] = [];
     for (const m of messages) {
       const key = senderKey(m.from);
-      if (!bySender.has(key)) bySender.set(key, m.id);
+      const n = perSenderCount.get(key) ?? 0;
+      if (n >= MAX_PER_SENDER) continue;
+      perSenderCount.set(key, n + 1);
+      selected.push(m.id);
     }
 
     const results = await Promise.allSettled(
-      [...bySender.values()].map(async (id) => {
-        const body = await fetchEmailBody(token.accessToken, id);
-        return extractFromText(body);
+      selected.map(async (id) => {
+        const ctx = await fetchEmailContext(token.accessToken, id);
+        const text = formatEmailForLLM(ctx);
+        return extractFromText(text);
       }),
     );
 

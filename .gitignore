@@ -1,15 +1,38 @@
+# dependencies and build output
 node_modules
 .next
 .vercel
-.claude/
+coverage
+dist
+*.tsbuildinfo
+
+# next.js auto-generated
+next-env.d.ts
+
+# drizzle internal metadata (manual migrations under drizzle/manual/ are tracked)
+drizzle/meta
+
+# env files (.env.example IS tracked as the template)
 .env
 .env.local
 .env.*.local
-*.log
+
+# IDE / editor settings (per-developer)
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# OS metadata
 .DS_Store
-coverage
-dist
-.tsbuildinfo
-next-env.d.ts
-drizzle/meta
+Thumbs.db
+desktop.ini
+
+# logs
+*.log
+
+# Claude Code local settings + design assets
+.claude/
 design_handoff_subtracker_redesign/

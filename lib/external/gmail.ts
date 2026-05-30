@@ -70,10 +70,18 @@ export type GmailMessageRef = { id: string; from: string };
  */
 export async function listBillingEmails(
   accessToken: string,
-  maxResults = 50,
+  maxResults = 200,
 ): Promise<GmailMessageRef[]> {
-  const q =
-    'newer_than:90d subject:(receipt OR invoice OR subscription OR billing OR "payment confirmation" OR renewed OR "your plan")';
+  // Gmail already classifies transactional purchase mail into `category:purchases`,
+  // which catches far more real subscription receipts than any keyword list.
+  // We OR it with a broader keyword set on subject AND body for senders that
+  // somehow escape that classification (or use foreign-language subjects).
+  const keywords =
+    '(receipt OR invoice OR subscription OR billing OR "payment confirmation" OR ' +
+    'renewed OR renewal OR "your plan" OR "order confirmation" OR membership OR ' +
+    '"thanks for your purchase" OR "your account has been charged" OR ' +
+    '"will renew" OR "auto-renew" OR "monthly plan" OR "annual plan")';
+  const q = `newer_than:90d (category:purchases OR ${keywords})`;
   const url =
     `https://gmail.googleapis.com/gmail/v1/users/me/messages` +
     `?maxResults=${maxResults}&q=${encodeURIComponent(q)}`;
@@ -125,6 +133,56 @@ export async function fetchEmailBody(
   return extractText(data.payload);
 }
 
+export type EmailContext = {
+  subject: string;
+  from: string;
+  date: string;
+  body: string;
+};
+
+/**
+ * Fetch the full message and return Subject + From + Date headers along with
+ * the extracted body. Subject in particular is the strongest signal for
+ * classification and must not be dropped before extraction.
+ */
+export async function fetchEmailContext(
+  accessToken: string,
+  messageId: string,
+): Promise<EmailContext> {
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error(`Gmail fetch failed: ${res.status}`);
+  const data = (await res.json()) as {
+    payload?: GmailPayload & { headers?: { name: string; value: string }[] };
+  };
+  const headerMap = new Map(
+    (data.payload?.headers ?? []).map(
+      (h) => [h.name.toLowerCase(), h.value] as const,
+    ),
+  );
+  return {
+    subject: headerMap.get("subject") ?? "",
+    from: headerMap.get("from") ?? "",
+    date: headerMap.get("date") ?? "",
+    body: extractText(data.payload),
+  };
+}
+
+/** Format an EmailContext as a single string ready for the Claude prompt. */
+export function formatEmailForLLM(ctx: EmailContext): string {
+  return [
+    `Subject: ${ctx.subject}`,
+    `From: ${ctx.from}`,
+    ctx.date ? `Date: ${ctx.date}` : "",
+    "",
+    ctx.body,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 type GmailPayload = {
   mimeType?: string;
   body?: { data?: string };
@@ -162,8 +220,18 @@ function stripHtml(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(?:br|p|div|tr|li|h\d)\b[^>]*>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

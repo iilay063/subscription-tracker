@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { confirmDetectedAction } from "@/app/actions/detection";
+import { ManualAddFallback } from "./manual-add-fallback";
 import type {
   DedupeCandidate,
   DeduplicationResolution,
@@ -85,9 +86,12 @@ export function DedupReviewPanel({
 
   if (candidates.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No subscriptions were found. Try a different receipt or scan again.
-      </p>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          No subscriptions were found. Try a different receipt or scan again.
+        </p>
+        <ManualAddFallback />
+      </div>
     );
   }
 
@@ -195,6 +199,8 @@ export function DedupReviewPanel({
           {error}
         </p>
       )}
+
+      <ManualAddFallback />
 
       <div className="flex justify-end">
         <Button onClick={confirm} disabled={pending}>

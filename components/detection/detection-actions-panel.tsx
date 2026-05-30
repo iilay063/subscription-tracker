@@ -10,6 +10,7 @@ import {
   reauthorizeGmailAction,
 } from "@/app/actions/detection";
 import { DedupReviewPanel } from "./dedup-review-panel";
+import { ManualAddFallback } from "./manual-add-fallback";
 import type { DedupeCandidate, ScanResult } from "@/lib/detection/types";
 
 const EMPTY: ScanResult = { ok: false, candidates: [] };
@@ -158,6 +159,10 @@ export function DetectionActionsPanel({
           {error}
         </p>
       )}
+
+      <div className="sm:col-span-2">
+        <ManualAddFallback />
+      </div>
     </div>
   );
 }

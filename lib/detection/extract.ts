@@ -6,22 +6,38 @@ import type { BillingCycle } from "@/lib/db/schema";
 
 const CYCLES: BillingCycle[] = ["monthly", "yearly", "weekly", "custom_days"];
 
-const SYSTEM_PROMPT = `You are a subscription receipt parser. Extract recurring subscription billing information from the provided content.
+const SYSTEM_PROMPT = `You are a subscription receipt parser for a tracker app. Your job is to find subscriptions and memberships the user is paying for. A human will review every result, so favor RECALL over precision: when in doubt, include it.
 
-RULES:
-1. Only extract information explicitly present in the content. Never infer or invent a service.
-2. If the content is NOT a subscription receipt, invoice, or billing confirmation, return an empty array [].
-3. Only extract RECURRING charges (subscriptions). Ignore one-time purchases.
-4. billing_cycle: "monthly" (~30 days), "yearly" (~365 days), "weekly" (~7 days), or "custom_days" for an explicit non-standard interval. If custom_days, set "custom_days" to the integer number of days; otherwise null.
-5. next_billing_date: the stated next charge / renewal date in YYYY-MM-DD. If only a charge date is given, add one billing cycle to it. If unknown, use today's date.
-6. currency: ISO 4217 3-letter code (USD, EUR, GBP, ...). If only "$" appears with no other hint, use USD.
-7. confidence: "high" if name + amount + date are all clearly stated; "medium" if one is inferred; "low" if two or more are inferred.
-8. source_note: a 1-4 word summary of what the receipt says (e.g. "Netflix April receipt").
+WHAT TO INCLUDE (recurring, periodic, or auto-renewing charges):
+- Streaming, music, gaming, software, news, productivity, AI, cloud, hosting, insurance, utilities, gym, dating apps, VPNs, cloud storage, etc.
+- Anything labeled "subscription", "membership", "plan", "premium", "pro", "plus", "annual pass", "monthly pass", "auto-renew", "renewal", "recurring".
+- Annual or monthly membership receipts even when the email is titled "order confirmation", "thank you for your purchase", "welcome to ...", or "your account has been charged" — these are very common framings for genuine subscriptions (Ancestry, NYT, Patreon, Costco, AAA, etc.).
+- Receipts that show "next charge", "next billing date", or "your plan renews on …".
+- Free trials that will auto-convert (include with their post-trial price if stated).
 
-Return ONLY a JSON array, no prose and no markdown fences:
-[{"name":"Netflix","cost":15.49,"currency":"USD","billing_cycle":"monthly","custom_days":null,"next_billing_date":"2026-06-15","confidence":"high","source_note":"Netflix receipt"}]`;
+WHAT TO EXCLUDE (one-time):
+- Physical goods (Amazon merchandise, electronics, clothes, groceries).
+- Rides (Uber/Lyft), single restaurant orders (DoorDash one-off), single flight/hotel bookings.
+- Donations and charity receipts (unless they're explicitly recurring).
+- One-time app purchases (not in-app subscriptions).
+- Refunds, password-reset / 2FA codes, marketing newsletters with no charge.
 
-const MAX_INPUT_CHARS = 8000;
+FIELD RULES:
+- name: the service / brand, not the email sender. "Ancestry", not "Ancestry Customer Service". Trim "Inc.", "LLC", "Receipt from", etc.
+- cost: total amount charged for the current billing period (number, no currency symbol). Use the post-discount actual amount.
+- currency: ISO 4217 3-letter code. "$" with no other hint → USD; "£" → GBP; "€" → EUR; "₪" → ILS; "¥" → JPY.
+- billing_cycle: "monthly" (~30d), "yearly" (~365d), "weekly" (~7d), or "custom_days" with the day count. If unclear but amount is annual-shaped (≥ $50 in one charge with no "monthly" hint), default to "yearly". Otherwise default to "monthly".
+- next_billing_date (YYYY-MM-DD): the explicitly stated next charge / renewal date. If only the current charge date is given, add one billing cycle to it. If neither is given, use today.
+- custom_days: integer when billing_cycle="custom_days"; null otherwise.
+- confidence: "high" if name + amount + date are all stated; "medium" if one is inferred; "low" if two+ are inferred or if you're unsure whether it's recurring at all.
+- source_note: a 1-4 word source hint, e.g. "Ancestry order confirmation".
+
+OUTPUT FORMAT — ONLY a JSON array, no prose, no markdown fences:
+[{"name":"Ancestry","cost":99.00,"currency":"USD","billing_cycle":"yearly","custom_days":null,"next_billing_date":"2027-05-14","confidence":"medium","source_note":"Ancestry order confirmation"}]
+
+If the content is clearly NOT billing-related at all (a password reset, a marketing newsletter, a social notification), return [].`;
+
+const MAX_INPUT_CHARS = 12000;
 
 export async function extractFromText(
   text: string,
