@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   users,
@@ -21,10 +22,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      // Request read-only Gmail access so users can scan their inbox for
-      // subscription receipts. `access_type: offline` + `prompt: consent`
-      // are required for Google to issue a refresh_token we can use for
-      // server-side Gmail API calls after the session's access token expires.
       authorization: {
         params: {
           scope:
@@ -42,6 +39,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = user.id;
       }
       return session;
+    },
+  },
+  events: {
+    // Auth.js does not refresh stored OAuth tokens when a user signs in again
+    // with an already-linked account, so a re-consent (e.g. to grant the Gmail
+    // scope) would otherwise be discarded. Write the fresh tokens/scope back to
+    // the account row on every Google sign-in.
+    async signIn({ account }) {
+      if (account?.provider === "google" && account.scope) {
+        await db
+          .update(accounts)
+          .set({
+            access_token: account.access_token,
+            expires_at: account.expires_at,
+            scope: account.scope,
+            ...(account.refresh_token
+              ? { refresh_token: account.refresh_token }
+              : {}),
+          })
+          .where(
+            and(
+              eq(accounts.provider, "google"),
+              eq(accounts.providerAccountId, account.providerAccountId),
+            ),
+          );
+      }
     },
   },
 });
